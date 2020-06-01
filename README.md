@@ -1,4 +1,4 @@
-# svelte app
+# Full Stack Svelte with mongo, express and node js
 
 This is a project template for [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template-webpack.
 
