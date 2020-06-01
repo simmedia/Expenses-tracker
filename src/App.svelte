@@ -1,0 +1,87 @@
+<script>
+  import axios from "axios";
+  import { onMount } from "svelte";
+
+  import Transaction from "./components/Transaction.svelte";
+  import SummaryCard from "./components/SummaryCard.svelte";
+
+  let input = 0;
+  let typeOfTransaction = "+";
+  let transactions = [];
+
+  $: disabled = !input;
+  $: balance = transactions.reduce((acc, t) => acc + t.value, 0);
+  $: income = transactions
+    .filter(t => t.value > 0)
+    .reduce((acc, t) => acc + t.value, 0);
+  $: expenses = transactions
+    .filter(t => t.value < 0)
+    .reduce((acc, t) => acc + t.value, 0);
+
+  onMount(async () => {
+    const { data } = await axios.get("/api/transactions");
+    transactions = data;
+  });
+
+  async function addTransaction() {
+    const transaction = {
+      date: new Date().getTime(),
+      value: typeOfTransaction === "+" ? input : input * -1
+    };
+    const response = await axios.post("/api/transactions", transaction);
+    transactions = [response.data, ...transactions];
+    input = 0;
+  }
+
+  async function removeTransaction(id) {
+    const response = await axios.delete(`/api/transactions/${id}`);
+    transactions = transactions.filter(t => t._id !== id);
+  }
+</script>
+
+<style>
+  .app {
+    margin: 40px auto;
+    max-width: 500px;
+  }
+</style>
+
+<div class="app container">
+  <div class="field has-addons">
+    <p class="control">
+      <span class="select">
+        <select bind:value={typeOfTransaction}>
+          <option value="+">+</option>
+          <option value="-">-</option>
+        </select>
+      </span>
+    </p>
+    <p class="control is-expanded">
+      <input
+        bind:value={input}
+        class="input"
+        type="number"
+        placeholder="Amount of money" />
+    </p>
+    <p class="control">
+      <button {disabled} on:click={addTransaction} class="button">Save</button>
+    </p>
+  </div>
+
+  <SummaryCard mode="balance" value={balance} />
+
+  <div class="columns">
+    <div class="column">
+      <SummaryCard mode="income" value={income} />
+    </div>
+    <div class="column">
+      <SummaryCard mode="expenses" value={expenses} />
+    </div>
+  </div>
+
+  <div class="field">
+    {#each transactions as transaction (transaction._id)}
+      <Transaction {transaction} {removeTransaction} />
+    {/each}
+  </div>
+</div>
